@@ -1,0 +1,172 @@
+= Building an IoT module
+Xavier Serpaggi xavier.serpaggi@emse.fr Maxime Lefrançois maxime.lefrancois@emse.fr v1.1, 2023-11-16
+:toc: left
+:encoding: utf-8
+:lang: en
+:icons: font
+:example-caption: Question
+:toc: header
+
+--
+We want to build a simple IoT module able to sense its environment and send data to a centralized server for further analysis.
+Instant data is also displayed on a screen on the module.
+
+We will use a microcontroller board based on the ESP32 microcontroller from Espressif.
+The board itself is manufactured by Adafruit Industries and is named HUZZAH32.
+--
+
+== Software
+
+This section is mostly about installing the required software and libraries on your computer.
+
+You will use the link:https://www.arduino.cc[Arduino IDE 2.x] to develop your project.
+
+The link:docs/adafruit-huzzah32-esp32-feather.pdf[ESP32] microcontroller is a priori unknown by the Arduino IDE.
+You have to download the card definitions.
+To do so, open the Arduino IDE, go to the Board Manager and search for `esp32`.
+Install the __**esp32** by Espressif Systems__ package.
+
+Using the Library Manager, install 
+
+. the __**DHT sensor library** by Adafruit__ library and required dependencies;
+. the __**Adafruit NeoPixel** by Adafruit__ library and required dependencies;
+. the __**PubSubClient** by Nick O'Leary__ library;
+. the __**Adafruit SSD1306** by Adafruit__ library;
+. the __**Adafruit GFX Library** by Adafruit__ (optional).
+
+You should be all set to start your project.
+
+NOTE: Every library in the Arduino ecosystem comes with examples available from the `File/Examples 🢒` menu entry.
+
+== Hardware
+
+Obviously, you will be using the ESP32 microcontroller.
+Chose the right board amongst the ones you have in your briefcase.
+
+Then, using the provided documentation and websites, answer the following questions.
+
+.What levels of voltage does this microcontroller accept?
+====
+__(Esp32 microcontroller accepts a power supply of voltage of 3.0~3.6V, it runs on 3.3V power and logic.
+ Logic High: 2.475 volts to 3.3 volts
+Logic Low: 0.0 volts to 0.825 volts
+Input Voltage: 3.0 volts to 4.2 volts
+Operating Voltage: 3.0 volts to 3.4 volts)__
+====
+
+.What are the most important features of the ESP32 according to this project?
+====
+__(the important features of the ESP32 microcontroller has wifi capabilities and GPIO pins for sensor connections, ADC for reading sensor values, and support for communication protocols like I2C and SPI )__
+====
+
+.How many ADC ports are present on the board and what are their limitations?
+====
+__(there a total of 13 ADC ports present in the ESP32 microcontroller. These ports are divided across two ADC units: ADC1 and ADC2. ADC1 has 8 channels (GPIO26, GPIO25, GPIO34, GPIO39, GPIO36, GPIO4) and ADC2 has 10 channels (GPIO13, GPIO12, GPIO27, GPIO33, GPIO15, GPIO32, GPIO14, GPIO35) and the limitations are 
+Sampling rate: ADC can sample at a maximum of 8000 samples per secound per ADC units
+Resolution: ADC has resolution of 12bits , which means that it can convert analog signals in to digital values with an accuracy of 0.004V.
+Sampling Range: the Esp32 ADC can measure analog voltages in the range of 0 to 3.3v
+Input impedance: the ADC has a input impedance of 10Mohoms which means it can draw a max current of 10uA from the analog signal source
+Common-mode voltage: the Esp32 ADC has a common-mode voltage of 2.048V, which means that thte analog signal must be within the range of 0 to 2.048V)__
+====
+
+The environmental values sensed will be the temperature, the humidity and the light level.
+
+Sensing temperature and humidity can be achieved using the link:docs/DHT22.pdf[DHT22] module.
+
+.What is the name of the bus used to communicate with the DHT22 module?
+====
+__(the DHT22 communicates with the microcontroller using a protocol knows as 1-wire bus is used to communicate between Micro controller and AM2302/DHT22)__
+====
+
+To sense the light level you will be using a simple sensor breakout from Sparkfun, the link:docs/TEMT6000.pdf[TEMT6000 ambient light sensor] (not included in the briefcase).
+This sensor has an analog output ranging from 0 to Vcc Volts.
+
+.How to use such an analog sensor with a microcontroller?
+====
+__(1. Connect the TEMT6000 VCC pin to the microcontroller 3.3v or 5v power supply.
+2.connect the TEMT6000 Ground pin (GND) to the microcontrollers ground pin
+3. connect the Temt6000 SIG pin to an analog input pin on the microcontroller. this is labeled as A0,A1,A2...)
+====
+
+As a temporary feature, a LED should indicate the status of the module (to be defined later).
+You will be using the link:docs/WS2812B.pdf[WS2812B breakout] for this purpose.
+Later on, the module will display information on a dedicated link:docs/adafruit-oled-featherwing.pdf[OLED display].
+
+.What communication protocol is used to drive the RGB LED?
+====
+__(The WS2812B RGB LED uses a one-wire communication protocol called the NeoPixel Protocol. This protocol is based on a shift register that is built into each LED. The shift register allows the LEDs to be chained together, and the data for each LED is sent sequentially from one LED to the next.)__
+====
+
+.What communication protocol is used to drive the OLED display?
+====
+__(the OLED feather wing use the I2C communication protocol for data exchange between oled and the MCU this protocol allows fast, efficient and simplified data transfer between devices. )__
+====
+
+== Putting things together
+
+It's now time to build your module!
+
+Check all the datasheets to decide where to plug the various sensors and actuators in order to avoid conflicts.
+
+.Propose a way to wire things together so everything fits on the breadboard
+====
+__(for each device you plan to plug to the microcontroller board, give the pin number on which you want to plug it plus the type of pin -- analog or digital)__
+====
+
+Make the code to have everything work together, but build your module in an incremental way.
+Test every new part you are bringing in before adding new ones.
+
+Communication will be the last problem to tackle, when everything else is functional.
+However, in order to have to refactor your code as few as possible, make it modular from the beginning (define constants, split it into functions).
+
+NOTE: Global variables are used very often in the domain of embedded programming!
+
+.Code
+====
+__(include your code in your git project and push it to the remote repository)__
+====
+
+=== Questions you should ask to yourself
+
+* At what rate data should be read from the sensors?
+* What kind of diagnostic status should the LED display and how?
+* What should be displayed on the screen?
+* At what rate data should be sent to the MQTT broker?
+
+
+== Communications
+
+To send and receive data over the network, the module will use the MQTT protocol over WiFi.
+
+The teaching staff will provide you with the network infrastructure to connect to.
+
+Your module will join the `PWME` WiFi network (WPA shared secret: `welcome to PWME`) and send data to the MQTT broker at address `10.1.2.3` port `1883`.
+
+The topic on which data is published should be built upon this model:
+
+.MQTT topic and message model
+[cols="3m,1m"]
+|===
+| Topic | Message
+
+| pwme/group_<group_id>/<module_uuid>/sensors/data
+| <JSON_message>
+|===
+
+Where:
+
+* `<group_id>`  is obviously the number on your briefcase;
+* `<module_uuid>` should be an unique identifier of your modulefootnote:[An UUID can be obtained with the `uuid` command on your Linux box. As an alternative, you may use the **ArduinoUniqueID** library to get the ID flashed in your microcontroller.];
+* `<JSON_message>` is a JSON message containing the actual data with `temperature`, `humidity` and `luminosity` as keys.
+
+.Example of topic/message
+----
+pwme/group_16/91e9f13651504c37/sensors/data {"temperature":19.1, "humidity": 47.9, "luminosity": 79}
+----
+
+.Code
+====
+__(complete your code so the module sends data to the broker every few seconds in a non blocking way, and don't forget to push these modifications to your remote repository)__
+====
+
+include::datasheets.adoc[]
